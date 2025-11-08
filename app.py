@@ -190,6 +190,27 @@ def server_encrypted_feed():
             pass
     return jsonify(items)
 
+
+@app.route('/api/airports')
+def airports():
+    query = request.args.get('q', '').lower()
+    nc_airports = [
+        {"name": "Charlotte Douglas International Airport", "code": "CLT"},
+        {"name": "Raleigh-Durham International Airport", "code": "RDU"},
+        {"name": "Piedmont Triad International Airport", "code": "GSO"},
+        {"name": "Wilmington International Airport", "code": "ILM"},
+        {"name": "Asheville Regional Airport", "code": "AVL"},
+        {"name": "Fayetteville Regional Airport", "code": "FAY"},
+        {"name": "Coastal Carolina Regional Airport", "code": "EWN"},
+        {"name": "Albert J. Ellis Airport", "code": "OAJ"},
+    ]
+    results = [
+        a for a in nc_airports
+        if query in a["name"].lower() or query in a["code"].lower()
+    ]
+    return jsonify(results)
+
+
 # flights API
 @app.get("/services/flight_api")
 @login_required
