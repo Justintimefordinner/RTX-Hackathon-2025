@@ -6,6 +6,8 @@ from datetime import datetime
 import sqlite3
 import os
 
+from services import flight_api as flights, flight_api
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
@@ -123,7 +125,7 @@ def post_message():
 @app.get("/api/flights")
 @login_required
 def get_flights():
-    return jsonify(FLIGHTS)
+    return jsonify(flight_api.get_flights())
 
 if __name__ == "__main__":
     app.run(debug=True)
