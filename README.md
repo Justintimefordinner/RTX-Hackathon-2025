@@ -1,3 +1,6 @@
 # RTX-Hackathon-2025
 NCAT Hack Rangers Hackathon 2025
-dszxf
+ 
+efkn fdjfid cldml 
+cdnkfn ek wngfiew
+f djsfnew
