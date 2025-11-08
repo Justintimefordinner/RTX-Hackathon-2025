@@ -120,24 +120,60 @@
       </div>
 
       <!-- Flights tab -->
-      <div class="tab-pane fade" id="flights" role="tabpanel" aria-labelledby="flights-tab">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h5 class="mb-0">Flights</h5>
-          <button id="refreshFlights" class="btn btn-outline-secondary btn-sm">Refresh</button>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm align-middle">
-            <thead>
-              <tr><th>Flight</th><th>From</th><th>To</th><th>Departs</th><th>Arrives</th></tr>
-            </thead>
-            <tbody id="flightsBody">
-              <tr><td colspan="5" class="text-muted">Open this tab or click Refresh to load flights.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+<div class="tab-pane fade" id="flights" role="tabpanel">
+  <div class="mb-3">
+    <h5 class="mb-2">North Carolina Flight Search</h5>
+    <div class="position-relative" style="max-width: 500px;">
+      <input id="airportSearch" class="form-control" placeholder="Search NC airports (e.g. RDU, CLT, AVL)">
+      <div id="airportDropdown" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
     </div>
-  {% endif %}
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-2 mt-4">
+    <h5 class="mb-0">Flights</h5>
+    <button id="refreshFlights" class="btn btn-outline-secondary btn-sm">Refresh</button>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr><th>Flight</th><th>From</th><th>To</th><th>Departs</th><th>Arrives</th></tr>
+      </thead>
+      <tbody id="flightsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const airportInput = document.getElementById("airportSearch");
+  const airportDropdown = document.getElementById("airportDropdown");
+
+  airportInput.addEventListener("input", async () => {
+    const q = airportInput.value.trim();
+    if (q.length < 2) {
+      airportDropdown.innerHTML = "";
+      return;
+    }
+
+    const res = await fetch(`/api/airports?q=${encodeURIComponent(q)}`);
+    if (!res.ok) return;
+    const airports = await res.json();
+
+    airportDropdown.innerHTML = airports.map(a =>
+      `<button class="list-group-item list-group-item-action">${a.name} (${a.code})</button>`
+    ).join("");
+
+    document.querySelectorAll("#airportDropdown button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        airportInput.value = btn.textContent;
+        airportDropdown.innerHTML = "";
+        // Optional: auto-load flights for that airport
+        loadFlights();
+      });
+    });
+  });
+</script>
+
 
 </div>
 
