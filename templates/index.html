@@ -26,14 +26,12 @@
 
   {% with messages = get_flashed_messages() %}
     {% if messages %}
-      <div class="alert alert-warning py-2">
-        {{ messages|join(", ") }}
-      </div>
+      <div class="alert alert-warning py-2">{{ messages|join(", ") }}</div>
     {% endif %}
   {% endwith %}
 
   {% if not current_user.is_authenticated %}
-    <!-- Auth card -->
+    <!-- Login/Register Section -->
     <div class="row justify-content-center">
       <div class="col-md-6">
         <div class="card shadow-sm">
@@ -46,34 +44,25 @@
                 <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab">Register</button>
               </li>
             </ul>
+
             <div class="tab-content">
               <div class="tab-pane fade show active" id="login" role="tabpanel">
                 <form method="post" action="{{ url_for('login') }}" class="row g-2">
-                  <div class="col-12">
-                    <input name="username" class="form-control" placeholder="Username" required>
-                  </div>
-                  <div class="col-12">
-                    <input name="password" type="password" class="form-control" placeholder="Password" required>
-                  </div>
-                  <div class="col-12 d-grid">
-                    <button class="btn btn-primary">Login</button>
-                  </div>
+                  <div class="col-12"><input name="username" class="form-control" placeholder="Username" required></div>
+                  <div class="col-12"><input name="password" type="password" class="form-control" placeholder="Password" required></div>
+                  <div class="col-12 d-grid"><button class="btn btn-primary">Login</button></div>
                 </form>
               </div>
+
               <div class="tab-pane fade" id="register" role="tabpanel">
                 <form method="post" action="{{ url_for('register') }}" class="row g-2">
-                  <div class="col-12">
-                    <input name="username" class="form-control" placeholder="Choose a username" required>
-                  </div>
-                  <div class="col-12">
-                    <input name="password" type="password" class="form-control" placeholder="Choose a password" required>
-                  </div>
-                  <div class="col-12 d-grid">
-                    <button class="btn btn-success">Create account</button>
-                  </div>
+                  <div class="col-12"><input name="username" class="form-control" placeholder="Choose a username" required></div>
+                  <div class="col-12"><input name="password" type="password" class="form-control" placeholder="Choose a password" required></div>
+                  <div class="col-12 d-grid"><button class="btn btn-success">Create account</button></div>
                 </form>
               </div>
             </div>
+
             <p class="text-muted mt-3 mb-0 small">You must be signed in to use chat and flight viewer.</p>
           </div>
         </div>
@@ -81,275 +70,175 @@
     </div>
 
   {% else %}
-    <!-- Main app tabs visible after login -->
+    <!-- Main app tabs -->
     <ul class="nav nav-tabs" id="mainTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="flights-tab" data-bs-toggle="tab" data-bs-target="#flights" type="button" role="tab">Flight Viewer</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="section2-tab" data-bs-toggle="tab" data-bs-target="#section2" type="button" role="tab">Section 2</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">Messaging</button>
-      </li>
+      <li class="nav-item"><button class="nav-link" id="flights-tab" data-bs-toggle="tab" data-bs-target="#flights" type="button" role="tab">Flight Viewer</button></li>
+      <li class="nav-item"><button class="nav-link" id="section2-tab" data-bs-toggle="tab" data-bs-target="#section2" type="button" role="tab">North Carolina Flight Search</button></li>
+      <li class="nav-item"><button class="nav-link active" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">Messaging</button></li>
     </ul>
 
     <div class="tab-content border-start border-end border-bottom p-3 bg-white rounded-bottom" id="mainTabsContent">
-      <!-- Chat tab -->
-      <div class="tab-pane fade show active" id="chat" role="tabpanel" aria-labelledby="chat-tab">
+      <!-- Chat -->
+      <div class="tab-pane fade show active" id="chat" role="tabpanel">
         <div class="row g-3">
-          <div class="col-12">
-            <div id="chatBox" class="chat-box"></div>
-          </div>
-          <div class="col-md-3">
-            <input id="userInput" class="form-control" value="{{ current_user.username }}" readonly>
-          </div>
-          <div class="col-md-7">
-            <input id="textInput" class="form-control" placeholder="Type a message and hit Enter">
-          </div>
-          <div class="col-md-2 d-grid">
-            <button id="sendBtn" class="btn btn-primary">Send</button>
+          <div class="col-12"><div id="chatBox" class="chat-box"></div></div>
+          <div class="col-md-3"><input id="userInput" class="form-control" value="{{ current_user.username }}" readonly></div>
+          <div class="col-md-7"><input id="textInput" class="form-control" placeholder="Type a message and hit Enter"></div>
+          <div class="col-md-2 d-grid"><button id="sendBtn" class="btn btn-primary">Send</button></div>
+        </div>
+      </div>
+
+      <!-- SECTION 2 (NC Airport Dropdown + Flights) -->
+      <div class="tab-pane fade" id="section2" role="tabpanel" aria-labelledby="section2-tab">
+        <h5 class="mb-3">North Carolina Airports</h5>
+
+        <div class="mb-3">
+          <select id="airportSelect" class="form-select">
+            <option value="">Select an NC airport...</option>
+          </select>
+        </div>
+
+        <div id="selectedAirport" class="alert alert-secondary" style="display:none;"></div>
+
+        <div id="airportFlights" style="display:none;">
+          <h6>Flights for selected airport</h6>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr><th>Flight</th><th>From</th><th>To</th><th>Departs</th><th>Arrives</th></tr>
+              </thead>
+              <tbody id="airportFlightsBody"></tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      <!-- Section 2 -->
-      <div class="tab-pane fade" id="section2" role="tabpanel" aria-labelledby="section2-tab">
-        <h5>Section 2</h5>
-        <p>WHAT GOES HERE</p>
+      <!-- Flight Viewer -->
+      <div class="tab-pane fade" id="flights" role="tabpanel" aria-labelledby="flights-tab">
+        <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
+          <h5 class="mb-0">Flights</h5>
+          <button id="refreshFlights" class="btn btn-outline-secondary btn-sm">Refresh</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Flight</th><th>From</th><th>To</th><th>Departs</th><th>Arrives</th></tr></thead>
+            <tbody id="flightsBody"></tbody>
+          </table>
+        </div>
       </div>
-
-      <!-- Flights tab -->
-<div class="tab-pane fade" id="flights" role="tabpanel">
-  <div class="mb-3">
-    <h5 class="mb-2">North Carolina Flight Search</h5>
-    <div class="position-relative" style="max-width: 500px;">
-      <input id="airportSearch" class="form-control" placeholder="Search NC airports (e.g. RDU, CLT, AVL)">
-      <div id="airportDropdown" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
     </div>
-  </div>
 
-  <div class="d-flex justify-content-between align-items-center mb-2 mt-4">
-    <h5 class="mb-0">Flights</h5>
-    <button id="refreshFlights" class="btn btn-outline-secondary btn-sm">Refresh</button>
-  </div>
+    <script>
+      // --- Chat logic ---
+      let lastTs = null;
+      const chatBox = document.getElementById("chatBox");
+      const textInput = document.getElementById("textInput");
+      const sendBtn  = document.getElementById("sendBtn");
+      const flightsBody = document.getElementById("flightsBody");
+      const refreshFlights = document.getElementById("refreshFlights");
 
-  <div class="table-responsive">
-    <table class="table table-sm align-middle">
-      <thead>
-        <tr><th>Flight</th><th>From</th><th>To</th><th>Departs</th><th>Arrives</th></tr>
-      </thead>
-      <tbody id="flightsBody"></tbody>
-    </table>
-  </div>
-</div>
+      function renderMsg(m){
+        const div = document.createElement("div");
+        div.className = "msg";
+        const time = new Date(m.ts).toLocaleTimeString();
+        div.innerHTML = `<strong>${escapeHtml(m.user)}</strong>: ${escapeHtml(m.text)} <br><small>${time}</small>`;
+        chatBox.appendChild(div);
+      }
+      function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-<script>
-  const airportInput = document.getElementById("airportSearch");
-  const airportDropdown = document.getElementById("airportDropdown");
+      async function loadMessages(){
+        const url = lastTs?`/api/messages?since=${encodeURIComponent(lastTs)}`:"/api/messages";
+        const res = await fetch(url);
+        if(!res.ok)return;
+        const data = await res.json();
+        if(data.length){
+          data.forEach(renderMsg);
+          chatBox.scrollTop = chatBox.scrollHeight;
+          lastTs = data[data.length-1].ts;
+        }
+      }
 
-  airportInput.addEventListener("input", async () => {
-    const q = airportInput.value.trim();
-    if (q.length < 2) {
-      airportDropdown.innerHTML = "";
-      return;
-    }
+      async function sendMessage(){
+        const text=textInput.value.trim();
+        if(!text)return;
+        await fetch("/api/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+        textInput.value="";
+        await loadMessages();
+      }
 
-    const res = await fetch(`/api/airports?q=${encodeURIComponent(q)}`);
-    if (!res.ok) return;
-    const airports = await res.json();
+      sendBtn?.addEventListener("click",sendMessage);
+      textInput?.addEventListener("keydown",e=>{if(e.key==="Enter")sendMessage();});
+      setInterval(loadMessages,2000);
+      loadMessages();
 
-    airportDropdown.innerHTML = airports.map(a =>
-      `<button class="list-group-item list-group-item-action">${a.name} (${a.code})</button>`
-    ).join("");
+      // --- Flight Viewer logic ---
+      async function loadFlights(){
+        const res=await fetch("/api/flights");
+        if(!res.ok)return;
+        const data=await res.json();
+        flightsBody.innerHTML=data.map(f=>`
+          <tr>
+            <td>${escapeHtml(f.flight)}</td>
+            <td>${escapeHtml(f.from)}</td>
+            <td>${escapeHtml(f.to)}</td>
+            <td>${new Date(f.dep).toLocaleString()}</td>
+            <td>${new Date(f.arr).toLocaleString()}</td>
+          </tr>`).join("");
+      }
+      refreshFlights?.addEventListener("click",loadFlights);
+      document.getElementById("flights-tab")?.addEventListener("shown.bs.tab",loadFlights);
 
-    document.querySelectorAll("#airportDropdown button").forEach(btn => {
-      btn.addEventListener("click", () => {
-        airportInput.value = btn.textContent;
-        airportDropdown.innerHTML = "";
-        // Optional: auto-load flights for that airport
-        loadFlights();
+      // --- NC Airport Dropdown logic ---
+      const airportSelect = document.getElementById("airportSelect");
+      const selectedAirportDiv = document.getElementById("selectedAirport");
+      const airportFlightsDiv = document.getElementById("airportFlights");
+      const airportFlightsBody = document.getElementById("airportFlightsBody");
+
+      async function loadAirports(){
+        const res = await fetch("/api/airports");
+        if(!res.ok)return;
+        const airports = await res.json();
+        airportSelect.innerHTML = '<option value="">Select an NC airport...</option>' +
+          airports.map(a => `<option value="${a.code}">${a.name} (${a.code})</option>`).join("");
+      }
+
+      async function loadAirportFlights(code){
+        const res = await fetch(`/api/flights?airport=${encodeURIComponent(code)}`);
+        if(!res.ok)return;
+        const flights = await res.json();
+        if(flights.length === 0){
+          airportFlightsBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No flights found for this airport</td></tr>`;
+        } else {
+          airportFlightsBody.innerHTML = flights.map(f=>`
+            <tr>
+              <td>${escapeHtml(f.flight)}</td>
+              <td>${escapeHtml(f.from)}</td>
+              <td>${escapeHtml(f.to)}</td>
+              <td>${new Date(f.dep).toLocaleString()}</td>
+              <td>${new Date(f.arr).toLocaleString()}</td>
+            </tr>`).join("");
+        }
+        airportFlightsDiv.style.display = "block";
+      }
+
+      airportSelect.addEventListener("change", async () => {
+        const selectedCode = airportSelect.value;
+        const selectedText = airportSelect.options[airportSelect.selectedIndex].text;
+        if(selectedCode){
+          selectedAirportDiv.textContent = `You selected: ${selectedText}`;
+          selectedAirportDiv.style.display = "block";
+          await loadAirportFlights(selectedCode);
+        } else {
+          selectedAirportDiv.style.display = "none";
+          airportFlightsDiv.style.display = "none";
+        }
       });
-    });
-  });
-</script>
 
-
+      document.getElementById("section2-tab")?.addEventListener("shown.bs.tab", loadAirports);
+    </script>
+  {% endif %}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-{% if current_user.is_authenticated %}
-<script>
-  // ------- Shared helpers -------
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
-
-  // ------- Chat logic -------
-  let lastTs = null;
-  const chatBox = document.getElementById("chatBox");
-  const textInput = document.getElementById("textInput");
-  const sendBtn  = document.getElementById("sendBtn");
-
-  function renderMsg(m){
-    const div = document.createElement("div");
-    div.className = "msg";
-    const time = new Date(m.ts).toLocaleTimeString();
-    div.innerHTML = `<strong>${escapeHtml(m.user)}</strong>: ${escapeHtml(m.text)}<br><small>${time}</small>`;
-    chatBox.appendChild(div);
-  }
-
-  async function loadMessages() {
-    try {
-      const url = lastTs ? `/api/messages?since=${encodeURIComponent(lastTs)}` : "/api/messages";
-      const res = await fetch(url);
-      if (!res.ok) return;
-      const data = await res.json();
-      if (Array.isArray(data) && data.length) {
-        data.forEach(renderMsg);
-        chatBox.scrollTop = chatBox.scrollHeight;
-        lastTs = data[data.length - 1].ts;
-      }
-    } catch (_) {}
-  }
-
-  async function sendMessage() {
-    const text = textInput.value.trim();
-    if (!text) return;
-    try {
-      await fetch("/api/messages", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({text})
-      });
-      textInput.value = "";
-      await loadMessages();
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  sendBtn?.addEventListener("click", sendMessage);
-  textInput?.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(); });
-  setInterval(loadMessages, 2000);
-  loadMessages();
-
-  // ===== Flights logic (stable across tab switches) =====
-  const flightsBody = document.getElementById("flightsBody");
-  const refreshFlights = document.getElementById("refreshFlights");
-  const flightsTabBtn  = document.getElementById("flights-tab");
-
-  let flightsAbort = null;
-  let requestSeq = 0; // guards against out-of-order responses
-
-  const pick = (...xs) => xs.find(v => v !== undefined && v !== null && v !== "") ?? "";
-  const safe = s => String(s ?? "");
-  const toISO = v => {
-    if (!v) return "";
-    if (typeof v === "string") return v;
-    if (typeof v === "number") {
-      const ms = v < 1e12 ? v * 1000 : v;
-      return new Date(ms).toISOString();
-    }
-    return "";
-  };
-
-  function normalize(f) {
-    const flight = pick(
-      f.flight?.number, f.flight?.iata, f.ident, f.callsign,
-      f.flightNumber, f.fa_flight_id, f.number
-    );
-    const from = pick(
-      f.departure?.airport?.iata, f.origin?.iata, f.origin?.icao,
-      f.origin?.code, f.origin?.airport?.iata, f.origin, f.from
-    );
-    const to = pick(
-      f.arrival?.airport?.iata, f.destination?.iata, f.destination?.icao,
-      f.destination?.code, f.destination?.airport?.iata, f.destination, f.to
-    );
-    const dep = toISO(pick(
-      f.departure?.scheduledTime, f.departure?.actualTime, f.scheduled_out,
-      f.actual_out, f.dep_time, f.scheduledDeparture, f.offblock_time, f.out_time
-    ));
-    const arr = toISO(pick(
-      f.arrival?.scheduledTime, f.arrival?.actualTime, f.scheduled_in,
-      f.actual_in, f.arr_time, f.scheduledArrival, f.onblock_time, f.in_time
-    ));
-    return { flight: flight || "N/A", from: from || "", to: to || "", dep, arr };
-  }
-
-  async function loadFlights() {
-    // cancel any previous in-flight request
-    if (flightsAbort) flightsAbort.abort();
-    flightsAbort = new AbortController();
-
-    const mySeq = ++requestSeq;
-    flightsBody.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
-
-    try {
-      const res = await fetch("/api/flights", {
-        method: "GET",
-        signal: flightsAbort.signal,
-        cache: "no-store",
-        credentials: "same-origin",       // make cookie intent explicit
-        headers: { "Accept": "application/json" }
-      });
-
-      if (mySeq !== requestSeq) return;   // a newer request started; drop this
-
-      if (!res.ok) {
-        let msg = `HTTP ${res.status}`;
-        try { msg += `: ${await res.text()}`; } catch {}
-        throw new Error(msg);
-      }
-
-      let data = await res.json();
-      if (typeof data === "string") {
-        try { data = JSON.parse(data); } catch {}
-      }
-      if (data && !Array.isArray(data) && Array.isArray(data.flights)) {
-        data = data.flights;
-      }
-      if (!Array.isArray(data)) data = [];
-
-      const rows = data.map(normalize);
-
-      if (rows.length === 0) {
-        flightsBody.innerHTML = `<tr><td colspan="5" class="text-muted">No flights found.</td></tr>`;
-        return;
-      }
-
-      flightsBody.innerHTML = rows.map(f => `
-        <tr>
-          <td>${safe(f.flight)}</td>
-          <td>${safe(f.from) || "—"}</td>
-          <td>${safe(f.to) || "—"}</td>
-          <td>${f.dep ? new Date(f.dep).toLocaleString() : "—"}</td>
-          <td>${f.arr ? new Date(f.arr).toLocaleString() : "—"}</td>
-        </tr>
-      `).join("");
-
-    } catch (e) {
-      if (e.name === "AbortError") return; // intentional cancel
-      console.error("loadFlights error:", e);
-      if (mySeq !== requestSeq) return;    // ignore old errors
-      flightsBody.innerHTML = `<tr><td colspan="5" class="text-danger">Failed to load flights.</td></tr>`;
-    } finally {
-      if (mySeq === requestSeq) flightsAbort = null;
-    }
-  }
-
-  // Refresh button
-  refreshFlights?.addEventListener("click", loadFlights);
-
-  // Bind specifically to the Flights tab button to avoid duplicate/global handlers
-  flightsTabBtn?.addEventListener("shown.bs.tab", loadFlights);
-  flightsTabBtn?.addEventListener("hide.bs.tab", () => {
-    if (flightsAbort) flightsAbort.abort();
-  });
-
-
-</script>
-{% endif %}
 </body>
 </html>

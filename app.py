@@ -191,80 +191,53 @@ def server_encrypted_feed():
     return jsonify(items)
 
 
-@app.route('/api/airports')
-def airports():
-    query = request.args.get('q', '').lower()
+@app.route("/api/airports")
+@login_required
+def api_airports():
+    """
+    Returns all NC airports (public + private).
+    """
+    # Example data: Ideally you'd pull from an external API like FAA, OpenSky, or AirLabs
+    # or from a prebuilt nc_airports.json file you maintain.
     nc_airports = [
-        {"name": "Charlotte Douglas International Airport", "code": "CLT"},
-        {"name": "Raleigh-Durham International Airport", "code": "RDU"},
-        {"name": "Piedmont Triad International Airport", "code": "GSO"},
-        {"name": "Wilmington International Airport", "code": "ILM"},
-        {"name": "Asheville Regional Airport", "code": "AVL"},
-        {"name": "Fayetteville Regional Airport", "code": "FAY"},
-        {"name": "Coastal Carolina Regional Airport", "code": "EWN"},
-        {"name": "Albert J. Ellis Airport", "code": "OAJ"},
+        {"name": "Charlotte Douglas International", "code": "CLT"},
+        {"name": "Raleigh–Durham International", "code": "RDU"},
+        {"name": "Piedmont Triad International", "code": "GSO"},
+        {"name": "Wilmington International", "code": "ILM"},
+        {"name": "Asheville Regional", "code": "AVL"},
+        {"name": "Fayetteville Regional", "code": "FAY"},
+        {"name": "Coastal Carolina Regional", "code": "EWN"},
+        {"name": "Albert J. Ellis", "code": "OAJ"},
+        {"name": "Concord–Padgett Regional", "code": "USA"},
+        {"name": "Rocky Mount–Wilson Regional", "code": "RWI"},
     ]
-    results = [
-        a for a in nc_airports
-        if query in a["name"].lower() or query in a["code"].lower()
+    return jsonify(nc_airports)
+
+
+@app.route("/api/flights")
+@login_required
+def api_flights():
+    """
+    Returns flights.
+    If ?airport=CODE is given, filters flights for that airport.
+    """
+    airport_code = request.args.get("airport")
+
+    # Example static data (you can replace this with FlightAware or AirLabs API)
+    all_flights = [
+        {"flight": "AA123", "from": "CLT", "to": "RDU", "dep": "2025-11-08T14:00:00", "arr": "2025-11-08T14:45:00"},
+        {"flight": "DL456", "from": "RDU", "to": "ATL", "dep": "2025-11-08T15:30:00", "arr": "2025-11-08T17:00:00"},
+        {"flight": "UA789", "from": "GSO", "to": "ORD", "dep": "2025-11-08T13:00:00", "arr": "2025-11-08T14:30:00"},
+        {"flight": "WN999", "from": "CLT", "to": "TPA", "dep": "2025-11-08T16:00:00", "arr": "2025-11-08T18:00:00"},
+        {"flight": "AA345", "from": "AVL", "to": "DCA", "dep": "2025-11-08T12:00:00", "arr": "2025-11-08T13:45:00"},
     ]
-    return jsonify(results)
 
+    if airport_code:
+        flights = [f for f in all_flights if f["from"] == airport_code or f["to"] == airport_code]
+    else:
+        flights = all_flights
 
-def get_flights():
-    start = datetime(2025, 11, 1, 0, 0)
-    end   = datetime(2025, 11, 8, 0, 0)
-    arrivals = fetch_flights("KCID", start, end)
-
-    def pick(*vals):
-        for v in vals:
-            if v:
-                return v
-        return None
-
-    normalized = []
-    for a in arrivals:
-        # try common shapes
-        flight_num = pick(
-            a.get("flight", {}).get("number"),
-            a.get("flight", {}).get("iata"),
-            a.get("ident"),
-            a.get("flightNumber"),
-        )
-        origin = pick(
-            a.get("departure", {}).get("airport", {}).get("iata"),
-            a.get("origin", {}).get("iata"),
-            a.get("origin", {}).get("code"),
-            a.get("origin"),
-        )
-        dest = pick(
-            a.get("arrival", {}).get("airport", {}).get("iata"),
-            a.get("destination", {}).get("iata"),
-            a.get("destination", {}).get("code"),
-            a.get("destination"),
-        )
-        dep_time = pick(
-            a.get("departure", {}).get("scheduledTime"),
-            a.get("scheduled_out"),
-            a.get("dep_time"),
-            a.get("scheduledDeparture"),
-        )
-        arr_time = pick(
-            a.get("arrival", {}).get("scheduledTime"),
-            a.get("scheduled_in"),
-            a.get("arr_time"),
-            a.get("scheduledArrival"),
-        )
-
-        normalized.append({
-            "flight": flight_num or "N/A",
-            "from": origin or "—",
-            "to": dest or "—",
-            "dep": dep_time or "",
-            "arr": arr_time or "",
-        })
-
-    return jsonify(normalized)
+    return jsonify(flights)
 
 
 if __name__ == "__main__":
