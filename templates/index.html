@@ -198,17 +198,18 @@
   setInterval(loadMessages, 2000);
   loadMessages();
 
-  // ------- Flights logic -------
-
+  // ===== Flights logic (stable across tab switches) =====
   const flightsBody = document.getElementById("flightsBody");
   const refreshFlights = document.getElementById("refreshFlights");
+  const flightsTabBtn  = document.getElementById("flights-tab");
 
-  // helpers
+  let flightsAbort = null;
+  let requestSeq = 0; // guards against out-of-order responses
+
   const pick = (...xs) => xs.find(v => v !== undefined && v !== null && v !== "") ?? "";
   const safe = s => String(s ?? "");
   const toISO = v => {
     if (!v) return "";
-    // accept ISO strings, seconds epoch, ms epoch
     if (typeof v === "string") return v;
     if (typeof v === "number") {
       const ms = v < 1e12 ? v * 1000 : v;
@@ -217,79 +218,56 @@
     return "";
   };
 
-  // normalize one flight record into {flight, from, to, dep, arr}
   function normalize(f) {
-    // common AeroAPI/Collins shapes
-    // ident or flight.number/iata
     const flight = pick(
-      f.flight?.number,
-      f.flight?.iata,
-      f.ident,
-      f.callsign,
-      f.flightNumber,
-      f.fa_flight_id,
-      f.number
+      f.flight?.number, f.flight?.iata, f.ident, f.callsign,
+      f.flightNumber, f.fa_flight_id, f.number
     );
-
-    // origin/destination codes or nested airports
     const from = pick(
-      f.departure?.airport?.iata,
-      f.origin?.iata,
-      f.origin?.code,
-      f.origin?.airport?.iata,
-      f.origin,
-      f.from
+      f.departure?.airport?.iata, f.origin?.iata, f.origin?.icao,
+      f.origin?.code, f.origin?.airport?.iata, f.origin, f.from
     );
-
     const to = pick(
-      f.arrival?.airport?.iata,
-      f.destination?.iata,
-      f.destination?.code,
-      f.destination?.airport?.iata,
-      f.destination,
-      f.to
+      f.arrival?.airport?.iata, f.destination?.iata, f.destination?.icao,
+      f.destination?.code, f.destination?.airport?.iata, f.destination, f.to
     );
-
-    // times in various keys
     const dep = toISO(pick(
-      f.departure?.scheduledTime,
-      f.departure?.actualTime,
-      f.scheduled_out,
-      f.actual_out,
-      f.dep_time,
-      f.scheduledDeparture,
-      f.offblock_time,
-      f.out_time
+      f.departure?.scheduledTime, f.departure?.actualTime, f.scheduled_out,
+      f.actual_out, f.dep_time, f.scheduledDeparture, f.offblock_time, f.out_time
     ));
-
     const arr = toISO(pick(
-      f.arrival?.scheduledTime,
-      f.arrival?.actualTime,
-      f.scheduled_in,
-      f.actual_in,
-      f.arr_time,
-      f.scheduledArrival,
-      f.onblock_time,
-      f.in_time
+      f.arrival?.scheduledTime, f.arrival?.actualTime, f.scheduled_in,
+      f.actual_in, f.arr_time, f.scheduledArrival, f.onblock_time, f.in_time
     ));
-
-    return {
-      flight: flight || "N/A",
-      from: from || "",
-      to: to || "",
-      dep,
-      arr
-    };
+    return { flight: flight || "N/A", from: from || "", to: to || "", dep, arr };
   }
 
-  async function loadFlights(){
-    flightsBody.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
-    try {
-      const res = await fetch("/api/flights");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      let data = await res.json();
+  async function loadFlights() {
+    // cancel any previous in-flight request
+    if (flightsAbort) flightsAbort.abort();
+    flightsAbort = new AbortController();
 
-      // handle {flights:[...]} or stringified JSON
+    const mySeq = ++requestSeq;
+    flightsBody.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
+
+    try {
+      const res = await fetch("/api/flights", {
+        method: "GET",
+        signal: flightsAbort.signal,
+        cache: "no-store",
+        credentials: "same-origin",       // make cookie intent explicit
+        headers: { "Accept": "application/json" }
+      });
+
+      if (mySeq !== requestSeq) return;   // a newer request started; drop this
+
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try { msg += `: ${await res.text()}`; } catch {}
+        throw new Error(msg);
+      }
+
+      let data = await res.json();
       if (typeof data === "string") {
         try { data = JSON.parse(data); } catch {}
       }
@@ -315,14 +293,25 @@
         </tr>
       `).join("");
 
-    } catch (e){
+    } catch (e) {
+      if (e.name === "AbortError") return; // intentional cancel
       console.error("loadFlights error:", e);
+      if (mySeq !== requestSeq) return;    // ignore old errors
       flightsBody.innerHTML = `<tr><td colspan="5" class="text-danger">Failed to load flights.</td></tr>`;
+    } finally {
+      if (mySeq === requestSeq) flightsAbort = null;
     }
   }
 
+  // Refresh button
   refreshFlights?.addEventListener("click", loadFlights);
-  document.getElementById("flights-tab")?.addEventListener("shown.bs.tab", loadFlights);
+
+  // Bind specifically to the Flights tab button to avoid duplicate/global handlers
+  flightsTabBtn?.addEventListener("shown.bs.tab", loadFlights);
+  flightsTabBtn?.addEventListener("hide.bs.tab", () => {
+    if (flightsAbort) flightsAbort.abort();
+  });
+
 
 </script>
 {% endif %}
