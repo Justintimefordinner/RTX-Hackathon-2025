@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Server Console</title>
+  <style>
+    :root { color-scheme: dark; }
+    html,body { height:100%; margin:0; background:#0b0f0c; color:#b7f0b1; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    .chrome { display:flex; flex-direction:column; height:100%; }
+    .topbar { padding:.5rem .75rem; background:#0f1511; border-bottom:1px solid #1b281e; display:flex; gap:.75rem; align-items:center; }
+    .pill { font-size:.8rem; padding:.15rem .5rem; border:1px solid #2a3d2f; border-radius:999px; background:#0c120e; color:#b7f0b1; }
+    .console { flex:1; padding:1rem; overflow:auto; white-space:pre-wrap; }
+    .line { margin:0; }
+    .ts { color:#88c596; }
+    .usr { color:#9fe3ff; }
+    .enc { color:#b7f0b1; }
+    .muted { color:#6aa178; }
+    .footer { padding:.4rem .75rem; border-top:1px solid #1b281e; background:#0f1511; color:#6aa178; font-size:.8rem; }
+    a { color:#9fe3ff; text-decoration:none; }
+    a:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+<div class="chrome">
+  <div class="topbar">
+    <span class="pill">SERVER</span>
+    <span class="muted">Encrypted feed</span>
+    <span style="margin-left:auto"><a href="{{ url_for('server_logout') }}">Logout</a></span>
+  </div>
+  <div id="console" class="console" aria-live="polite"></div>
+  <div class="footer">Hint: mark client messages as <code>ENC:...</code> to appear here (PoC).</div>
+</div>
+
+<script>
+  let lastTs = null;
+  const el = document.getElementById('console');
+
+  function append(m) {
+    const t = new Date(m.ts).toISOString();
+    const line = document.createElement('div');
+    line.className = 'line';
+    line.innerHTML = `<span class="ts">[${t}]</span> <span class="usr">${escapeHtml(m.user)}</span> <span class="enc">${escapeHtml(m.text)}</span>`;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  async function tick(){
+    const url = lastTs ? `/api/server/encrypted?since=${encodeURIComponent(lastTs)}` : `/api/server/encrypted`;
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (Array.isArray(data) && data.length){
+      data.forEach(append);
+      lastTs = data[data.length-1].ts;
+    }
+  }
+
+  setInterval(tick, 1000);
+  tick();
+</script>
+</body>
+</html>

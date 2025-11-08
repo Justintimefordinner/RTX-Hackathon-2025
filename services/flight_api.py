@@ -16,7 +16,7 @@ def get_flights(arrival_airport="KCID", start_local=None, end_local=None):
     start_utc = (start_local - local_offset).replace(tzinfo=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     end_utc   = (end_local   - local_offset).replace(tzinfo=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    endpoint = f"/history/airports/{arrival_airport}/flights/arrivals"
+    endpoint = f"/airports/{arrival_airport}/flights/arrivals"
     headers = {
         "Accept": "application/json",
         "x-apikey": API_KEY
