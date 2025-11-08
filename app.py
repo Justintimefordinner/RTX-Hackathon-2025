@@ -200,20 +200,18 @@ def api_airports():
     # Example data: Ideally you'd pull from an external API like FAA, OpenSky, or AirLabs
     # or from a prebuilt nc_airports.json file you maintain.
     nc_airports = [
-        {"name": "Charlotte Douglas International Airport", "code": "CLT"},
-        {"name": "Raleigh-Durham International Airport", "code": "RDU"},
-        {"name": "Piedmont Triad International Airport", "code": "GSO"},
-        {"name": "Wilmington International Airport", "code": "ILM"},
-        {"name": "Asheville Regional Airport", "code": "AVL"},
-        {"name": "Fayetteville Regional Airport", "code": "FAY"},
-        {"name": "Coastal Carolina Regional Airport", "code": "EWN"},
-        {"name": "Albert J. Ellis Airport", "code": "OAJ"},
+        {"name": "Charlotte Douglas International", "code": "CLT"},
+        {"name": "Raleigh–Durham International", "code": "RDU"},
+        {"name": "Piedmont Triad International", "code": "GSO"},
+        {"name": "Wilmington International", "code": "ILM"},
+        {"name": "Asheville Regional", "code": "AVL"},
+        {"name": "Fayetteville Regional", "code": "FAY"},
+        {"name": "Coastal Carolina Regional", "code": "EWN"},
+        {"name": "Albert J. Ellis", "code": "OAJ"},
+        {"name": "Concord–Padgett Regional", "code": "USA"},
+        {"name": "Rocky Mount–Wilson Regional", "code": "RWI"},
     ]
-    results = [
-        a for a in nc_airports
-        if query in a["name"].lower() or query in a["code"].lower()
-    ]
-    return jsonify(results)
+    return jsonify(nc_airports)
 
 
 # flights API
