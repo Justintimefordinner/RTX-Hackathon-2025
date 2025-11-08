@@ -1,10 +1,30 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from collections import deque
 from datetime import datetime
 import sqlite3
 import os
+
+SERVER_USER = "admin"
+SERVER_PASS = "password"
+
+def decrypt_letter_wingding(letterinWord: str) -> str:
+    output = ""
+    decrypt_map = {
+        "U0001F61C": "a","U0001F628": "b","U0001F485": "c","U0001F9AC": "d","U0001F348": "e",
+        "U0001F9C2": "f","U00026E9": "g","U0001F31D": "h","U0001F31A": "i","U0001F3B2": "j",
+        "U0001F338": "k","U0001F495": "l","U0001F973": "m","U0001F9E9": "n","U0001F393": "o",
+        "U0002702": "p","U0001FAE7": "q","U000262E": "r","U000269C": "s","U0001F7E3": "t",
+        "U000264F": "u","U000264B": "v","U0001F92F": "w","U000264D": "x","U0001F4B0": "y","U0001F9E6": "z"
+    }
+
+    for i in range(0, len(letterinWord), 8):
+        code = letterinWord[i:i+8]
+        if code in decrypt_map:
+            output += decrypt_map[code]
+    return output
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
@@ -93,19 +113,30 @@ def logout():
     logout_user()
     return redirect(url_for("index"))
 
+def is_encrypted_text(txt: str) -> bool:
+    # PoC rule: treat messages starting with "ENC:" as encrypted
+    return txt.strip().startswith("ENC:")
+
 # chat APIs
 @app.get("/api/messages")
 @login_required
 def get_messages():
     since = request.args.get("since")
-    if since:
-        try:
-            cutoff = datetime.fromisoformat(since)
-            items = [m for m in MESSAGES if datetime.fromisoformat(m["ts"]) > cutoff]
-            return jsonify(items)
-        except Exception:
-            pass
-    return jsonify(list(MESSAGES))
+    encrypted_only = request.args.get("encrypted") in ("1", "true", "True")
+
+    def after_since(items):
+        if since:
+            try:
+                cutoff = datetime.fromisoformat(since)
+                return [m for m in items if datetime.fromisoformat(m["ts"]) > cutoff]
+            except Exception:
+                return items
+        return items
+
+    items = list(MESSAGES)
+    if encrypted_only:
+        items = [m for m in items if is_encrypted_text(m["text"])]
+    return jsonify(after_since(items))
 
 @app.post("/api/messages")
 @login_required
@@ -119,8 +150,45 @@ def post_message():
     MESSAGES.append(msg)
     return jsonify({"ok": True})
 
+# --- Server console auth (separate from Flask-Login) ---
+@app.get("/server")
+def server_console():
+    if not session.get("server_auth"):
+        return render_template("server_login.html")
+    return render_template("server_console.html")
+
+@app.post("/server_login")
+def server_login():
+    u = (request.form.get("username") or "").strip()
+    p = request.form.get("password") or ""
+    if u == SERVER_USER and p == SERVER_PASS:
+        session["server_auth"] = True
+        return redirect(url_for("server_console"))
+    flash("Invalid server credentials")
+    return redirect(url_for("server_console"))
+
+@app.get("/server_logout")
+def server_logout():
+    session.pop("server_auth", None)
+    return redirect(url_for("server_console"))
+
+# --- API for console: always encrypted-only, no user login required but gated by server_auth ---
+@app.get("/api/server/encrypted")
+def server_encrypted_feed():
+    if not session.get("server_auth"):
+        return jsonify({"error": "unauthorized"}), 401
+    since = request.args.get("since")
+    items = [m for m in MESSAGES if is_encrypted_text(m["text"])]
+    if since:
+        try:
+            cutoff = datetime.fromisoformat(since)
+            items = [m for m in items if datetime.fromisoformat(m["ts"]) > cutoff]
+        except Exception:
+            pass
+    return jsonify(items)
+
 # flights API
-@app.get("/api/flights")
+@app.get("/services/flight_api")
 @login_required
 def get_flights():
     return jsonify(FLIGHTS)
