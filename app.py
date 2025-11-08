@@ -214,11 +214,31 @@ def api_airports():
     return jsonify(nc_airports)
 
 
-# flights API
-@app.get("/services/flight_api")
+@app.route("/api/flights")
 @login_required
-def get_flights():
-    return jsonify(FLIGHTS)
+def api_flights():
+    """
+    Returns flights.
+    If ?airport=CODE is given, filters flights for that airport.
+    """
+    airport_code = request.args.get("airport")
+
+    # Example static data (you can replace this with FlightAware or AirLabs API)
+    all_flights = [
+        {"flight": "AA123", "from": "CLT", "to": "RDU", "dep": "2025-11-08T14:00:00", "arr": "2025-11-08T14:45:00"},
+        {"flight": "DL456", "from": "RDU", "to": "ATL", "dep": "2025-11-08T15:30:00", "arr": "2025-11-08T17:00:00"},
+        {"flight": "UA789", "from": "GSO", "to": "ORD", "dep": "2025-11-08T13:00:00", "arr": "2025-11-08T14:30:00"},
+        {"flight": "WN999", "from": "CLT", "to": "TPA", "dep": "2025-11-08T16:00:00", "arr": "2025-11-08T18:00:00"},
+        {"flight": "AA345", "from": "AVL", "to": "DCA", "dep": "2025-11-08T12:00:00", "arr": "2025-11-08T13:45:00"},
+    ]
+
+    if airport_code:
+        flights = [f for f in all_flights if f["from"] == airport_code or f["to"] == airport_code]
+    else:
+        flights = all_flights
+
+    return jsonify(flights)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
