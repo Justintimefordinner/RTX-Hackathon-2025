@@ -211,6 +211,7 @@ def airports():
     ]
     return jsonify(results)
 
+
 # flights API
 @app.get("/services/flight_api")
 @login_required
