@@ -239,6 +239,64 @@ def api_flights():
 
     return jsonify(flights)
 
+# flights API
+@app.get("/services/flight_api")
+@login_required
+def get_flights():
+    start = datetime(2025, 10, 30, 17, 0)
+    end   = datetime(2025, 10, 31, 17, 10)
+    arrivals = fetch_flights("KCID", start, end)
+
+    def pick(*vals):
+        for v in vals:
+            if v:
+                return v
+        return None
+
+    normalized = []
+    for a in arrivals:
+        # try common shapes
+        flight_num = pick(
+            a.get("flight", {}).get("number"),
+            a.get("flight", {}).get("iata"),
+            a.get("ident"),
+            a.get("flightNumber"),
+        )
+        origin = pick(
+            a.get("departure", {}).get("airport", {}).get("iata"),
+            a.get("origin", {}).get("iata"),
+            a.get("origin", {}).get("code"),
+            a.get("origin"),
+        )
+        dest = pick(
+            a.get("arrival", {}).get("airport", {}).get("iata"),
+            a.get("destination", {}).get("iata"),
+            a.get("destination", {}).get("code"),
+            a.get("destination"),
+        )
+        dep_time = pick(
+            a.get("departure", {}).get("scheduledTime"),
+            a.get("scheduled_out"),
+            a.get("dep_time"),
+            a.get("scheduledDeparture"),
+        )
+        arr_time = pick(
+            a.get("arrival", {}).get("scheduledTime"),
+            a.get("scheduled_in"),
+            a.get("arr_time"),
+            a.get("scheduledArrival"),
+        )
+
+        normalized.append({
+            "flight": flight_num or "N/A",
+            "from": origin or "—",
+            "to": dest or "—",
+            "dep": dep_time or "",
+            "arr": arr_time or "",
+        })
+
+    return jsonify(normalized)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

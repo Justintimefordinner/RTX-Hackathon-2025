@@ -113,7 +113,7 @@
         </div>
       </div>
 
-      <!-- Flight Viewer -->
+      <!-- Iowa Flight Viewer -->
       <div class="tab-pane fade" id="flights" role="tabpanel" aria-labelledby="flights-tab">
         <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
           <h5 class="mb-0">Flights</h5>
@@ -173,7 +173,7 @@
 
       // --- Flight Viewer logic ---
       async function loadFlights(){
-        const res=await fetch("/api/flights");
+        const res=await fetch("/services/flight_api");
         if(!res.ok)return;
         const data=await res.json();
         flightsBody.innerHTML=data.map(f=>`
