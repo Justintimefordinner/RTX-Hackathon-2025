@@ -191,9 +191,14 @@ def server_encrypted_feed():
     return jsonify(items)
 
 
-@app.route('/api/airports')
-def airports():
-    query = request.args.get('q', '').lower()
+@app.route("/api/airports")
+@login_required
+def api_airports():
+    """
+    Returns all NC airports (public + private).
+    """
+    # Example data: Ideally you'd pull from an external API like FAA, OpenSky, or AirLabs
+    # or from a prebuilt nc_airports.json file you maintain.
     nc_airports = [
         {"name": "Charlotte Douglas International Airport", "code": "CLT"},
         {"name": "Raleigh-Durham International Airport", "code": "RDU"},
