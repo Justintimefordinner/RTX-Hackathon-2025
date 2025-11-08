@@ -191,6 +191,7 @@ def server_encrypted_feed():
     return jsonify(items)
 
 
+
 @app.route('/api/airports')
 def airports():
     query = request.args.get('q', '').lower()
