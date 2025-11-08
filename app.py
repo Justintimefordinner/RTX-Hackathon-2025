@@ -131,8 +131,7 @@ def get_messages():
         if since:
             try:
                 cutoff = datetime.fromisoformat(since)
-                items = [m for m in items if datetime.fromisoformat(m["ts"]) > cutoff]
-                return jsonify(items)
+                return [m for m in items if datetime.fromisoformat(m["ts"]) > cutoff]
             except Exception:
                 return items
         return items
