@@ -6,7 +6,7 @@ from datetime import datetime
 import sqlite3
 import os
 from config import API_KEY, BASE_URL
-from services.flight_api import get_flights
+from services.flight_api import get_flights as fetch_flights
 
 SERVER_USER = "admin"
 SERVER_PASS = "password"
