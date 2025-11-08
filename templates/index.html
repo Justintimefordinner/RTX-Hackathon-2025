@@ -83,12 +83,22 @@
   {% else %}
     <!-- Main app tabs visible after login -->
     <ul class="nav nav-tabs" id="mainTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">Messaging</button>
-      </li>
+      <!--Messaging-->
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="flights-tab" data-bs-toggle="tab" data-bs-target="#flights" type="button" role="tab">Flight Viewer</button>
       </li>
+
+      <!-- Section 2 -->
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="section2-tab" data-bs-toggle="tab" data-bs-target="#section2" type="button" role="tab">Section 2</button>
+      </li>
+
+      <!--Flight Info-->
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">Messaging</button>
+      </li>
+
+      <!---->
     </ul>
 
     <div class="tab-content border-start border-end border-bottom p-3 bg-white rounded-bottom" id="mainTabsContent">
@@ -110,6 +120,14 @@
         </div>
       </div>
 
+
+      <!-- Section 2 -->
+      <div class="tab-pane fade" id="section2" role="tabpanel" aria-labelledby="section2-tab">
+          <h5>Section 2</h5>
+          <p>WHAT GOES HERE</p>
+        </div>
+      </div>
+
       <!-- Flights tab -->
       <div class="tab-pane fade" id="flights" role="tabpanel">
         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -126,6 +144,8 @@
         </div>
       </div>
     </div>
+
+
 
     <script>
     let lastTs = null;
