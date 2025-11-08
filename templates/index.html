@@ -83,27 +83,20 @@
   {% else %}
     <!-- Main app tabs visible after login -->
     <ul class="nav nav-tabs" id="mainTabs" role="tablist">
-      <!--Messaging-->
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="flights-tab" data-bs-toggle="tab" data-bs-target="#flights" type="button" role="tab">Flight Viewer</button>
       </li>
-
-      <!-- Section 2 -->
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="section2-tab" data-bs-toggle="tab" data-bs-target="#section2" type="button" role="tab">Section 2</button>
       </li>
-
-      <!--Flight Info-->
       <li class="nav-item" role="presentation">
         <button class="nav-link active" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">Messaging</button>
       </li>
-
-      <!---->
     </ul>
 
     <div class="tab-content border-start border-end border-bottom p-3 bg-white rounded-bottom" id="mainTabsContent">
       <!-- Chat tab -->
-      <div class="tab-pane fade show active" id="chat" role="tabpanel">
+      <div class="tab-pane fade show active" id="chat" role="tabpanel" aria-labelledby="chat-tab">
         <div class="row g-3">
           <div class="col-12">
             <div id="chatBox" class="chat-box"></div>
@@ -120,16 +113,14 @@
         </div>
       </div>
 
-
       <!-- Section 2 -->
       <div class="tab-pane fade" id="section2" role="tabpanel" aria-labelledby="section2-tab">
-          <h5>Section 2</h5>
-          <p>WHAT GOES HERE</p>
-        </div>
+        <h5>Section 2</h5>
+        <p>WHAT GOES HERE</p>
       </div>
 
       <!-- Flights tab -->
-      <div class="tab-pane fade" id="flights" role="tabpanel">
+      <div class="tab-pane fade" id="flights" role="tabpanel" aria-labelledby="flights-tab">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h5 class="mb-0">Flights</h5>
           <button id="refreshFlights" class="btn btn-outline-secondary btn-sm">Refresh</button>
@@ -139,45 +130,57 @@
             <thead>
               <tr><th>Flight</th><th>From</th><th>To</th><th>Departs</th><th>Arrives</th></tr>
             </thead>
-            <tbody id="flightsBody"></tbody>
+            <tbody id="flightsBody">
+              <tr><td colspan="5" class="text-muted">Open this tab or click Refresh to load flights.</td></tr>
+            </tbody>
           </table>
         </div>
       </div>
     </div>
+  {% endif %}
 
+</div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% if current_user.is_authenticated %}
+<script>
+  // ------- Shared helpers -------
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
 
-    <script>
-    let lastTs = null;
-    const chatBox = document.getElementById("chatBox");
-    const textInput = document.getElementById("textInput");
-    const sendBtn  = document.getElementById("sendBtn");
-    const flightsBody = document.getElementById("flightsBody");
-    const refreshFlights = document.getElementById("refreshFlights");
+  // ------- Chat logic -------
+  let lastTs = null;
+  const chatBox = document.getElementById("chatBox");
+  const textInput = document.getElementById("textInput");
+  const sendBtn  = document.getElementById("sendBtn");
 
-    function renderMsg(m){
-      const div = document.createElement("div");
-      div.className = "msg";
-      const time = new Date(m.ts).toLocaleTimeString();
-      div.innerHTML = `<strong>${escapeHtml(m.user)}</strong>: ${escapeHtml(m.text)} <br><small>${time}</small>`;
-      chatBox.appendChild(div);
-    }
-    function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function renderMsg(m){
+    const div = document.createElement("div");
+    div.className = "msg";
+    const time = new Date(m.ts).toLocaleTimeString();
+    div.innerHTML = `<strong>${escapeHtml(m.user)}</strong>: ${escapeHtml(m.text)}<br><small>${time}</small>`;
+    chatBox.appendChild(div);
+  }
 
-    async function loadMessages() {
+  async function loadMessages() {
+    try {
       const url = lastTs ? `/api/messages?since=${encodeURIComponent(lastTs)}` : "/api/messages";
       const res = await fetch(url);
-      if (!res.ok) return; // probably logged out
+      if (!res.ok) return;
       const data = await res.json();
-      if (data.length) {
+      if (Array.isArray(data) && data.length) {
         data.forEach(renderMsg);
         chatBox.scrollTop = chatBox.scrollHeight;
         lastTs = data[data.length - 1].ts;
       }
-    }
-    async function sendMessage() {
-      const text = textInput.value.trim();
-      if (!text) return;
+    } catch (_) {}
+  }
+
+  async function sendMessage() {
+    const text = textInput.value.trim();
+    if (!text) return;
+    try {
       await fetch("/api/messages", {
         method: "POST",
         headers: {"Content-Type":"application/json"},
@@ -185,35 +188,143 @@
       });
       textInput.value = "";
       await loadMessages();
+    } catch (e) {
+      console.error(e);
     }
-    sendBtn?.addEventListener("click", sendMessage);
-    textInput?.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(); });
+  }
 
-    setInterval(loadMessages, 2000);
-    loadMessages();
+  sendBtn?.addEventListener("click", sendMessage);
+  textInput?.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(); });
+  setInterval(loadMessages, 2000);
+  loadMessages();
 
-    async function loadFlights(){
+  // ------- Flights logic -------
+
+  const flightsBody = document.getElementById("flightsBody");
+  const refreshFlights = document.getElementById("refreshFlights");
+
+  // helpers
+  const pick = (...xs) => xs.find(v => v !== undefined && v !== null && v !== "") ?? "";
+  const safe = s => String(s ?? "");
+  const toISO = v => {
+    if (!v) return "";
+    // accept ISO strings, seconds epoch, ms epoch
+    if (typeof v === "string") return v;
+    if (typeof v === "number") {
+      const ms = v < 1e12 ? v * 1000 : v;
+      return new Date(ms).toISOString();
+    }
+    return "";
+  };
+
+  // normalize one flight record into {flight, from, to, dep, arr}
+  function normalize(f) {
+    // common AeroAPI/Collins shapes
+    // ident or flight.number/iata
+    const flight = pick(
+      f.flight?.number,
+      f.flight?.iata,
+      f.ident,
+      f.callsign,
+      f.flightNumber,
+      f.fa_flight_id,
+      f.number
+    );
+
+    // origin/destination codes or nested airports
+    const from = pick(
+      f.departure?.airport?.iata,
+      f.origin?.iata,
+      f.origin?.code,
+      f.origin?.airport?.iata,
+      f.origin,
+      f.from
+    );
+
+    const to = pick(
+      f.arrival?.airport?.iata,
+      f.destination?.iata,
+      f.destination?.code,
+      f.destination?.airport?.iata,
+      f.destination,
+      f.to
+    );
+
+    // times in various keys
+    const dep = toISO(pick(
+      f.departure?.scheduledTime,
+      f.departure?.actualTime,
+      f.scheduled_out,
+      f.actual_out,
+      f.dep_time,
+      f.scheduledDeparture,
+      f.offblock_time,
+      f.out_time
+    ));
+
+    const arr = toISO(pick(
+      f.arrival?.scheduledTime,
+      f.arrival?.actualTime,
+      f.scheduled_in,
+      f.actual_in,
+      f.arr_time,
+      f.scheduledArrival,
+      f.onblock_time,
+      f.in_time
+    ));
+
+    return {
+      flight: flight || "N/A",
+      from: from || "",
+      to: to || "",
+      dep,
+      arr
+    };
+  }
+
+  async function loadFlights(){
+    flightsBody.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
+    try {
       const res = await fetch("/api/flights");
-      if (!res.ok) return;
-      const data = await res.json();
-      flightsBody.innerHTML = data.map(f => `
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      let data = await res.json();
+
+      // handle {flights:[...]} or stringified JSON
+      if (typeof data === "string") {
+        try { data = JSON.parse(data); } catch {}
+      }
+      if (data && !Array.isArray(data) && Array.isArray(data.flights)) {
+        data = data.flights;
+      }
+      if (!Array.isArray(data)) data = [];
+
+      const rows = data.map(normalize);
+
+      if (rows.length === 0) {
+        flightsBody.innerHTML = `<tr><td colspan="5" class="text-muted">No flights found.</td></tr>`;
+        return;
+      }
+
+      flightsBody.innerHTML = rows.map(f => `
         <tr>
-          <td>${escapeHtml(f.flight)}</td>
-          <td>${escapeHtml(f.from)}</td>
-          <td>${escapeHtml(f.to)}</td>
-          <td>${new Date(f.dep).toLocaleString()}</td>
-          <td>${new Date(f.arr).toLocaleString()}</td>
+          <td>${safe(f.flight)}</td>
+          <td>${safe(f.from) || "—"}</td>
+          <td>${safe(f.to) || "—"}</td>
+          <td>${f.dep ? new Date(f.dep).toLocaleString() : "—"}</td>
+          <td>${f.arr ? new Date(f.arr).toLocaleString() : "—"}</td>
         </tr>
       `).join("");
-    }
-    refreshFlights?.addEventListener("click", loadFlights);
-    document.getElementById("flights-tab")?.addEventListener("shown.bs.tab", loadFlights);
-    </script>
-  {% endif %}
 
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    } catch (e){
+      console.error("loadFlights error:", e);
+      flightsBody.innerHTML = `<tr><td colspan="5" class="text-danger">Failed to load flights.</td></tr>`;
+    }
+  }
+
+  refreshFlights?.addEventListener("click", loadFlights);
+  document.getElementById("flights-tab")?.addEventListener("shown.bs.tab", loadFlights);
+
+</script>
+{% endif %}
 </body>
 </html>
-
-<!--ALLOW THIS TO PUSH-->
